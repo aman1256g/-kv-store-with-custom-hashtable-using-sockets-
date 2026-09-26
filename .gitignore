@@ -1,0 +1,6 @@
+project
+client
+server
+redis-server
+thread_server
+*.o
