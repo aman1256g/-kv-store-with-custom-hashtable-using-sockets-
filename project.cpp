@@ -1,3 +1,4 @@
+#include<bits/stdc++.h>
 #include <arpa/inet.h>
 #include <cstdio>
 #include <cstring>
@@ -6,6 +7,8 @@
 #include <unistd.h>
 #include <cstdint>
 using namespace std;
+
+
 
 
 bool readfull(int conn , char *buf , size_t n){
@@ -21,7 +24,7 @@ return true;
 }
 
 
-bool writefull(int conn , char* buf , int n){
+bool writefull(int conn , char* buf , size_t n){
     while(n>0){
         ssize_t rv=write(conn , buf , n);
         if(rv <= 0)
@@ -31,6 +34,74 @@ bool writefull(int conn , char* buf , int n){
     }
     return true;
 }
+
+
+
+
+map<string, string> store;
+
+vector<string> parse(const string &input) {
+    vector<string> cmd;
+    string temp;
+    for (size_t i = 0; i < input.length(); i++) {
+        if (input[i] == ' ') {
+            if (!temp.empty()) {
+                cmd.push_back(temp);
+                temp.clear();
+            }
+        } else {
+            temp += input[i];
+        }
+    }
+    if (!temp.empty()) cmd.push_back(temp);   // flush the last token
+    return cmd;
+}
+
+string handle_command(vector<string> &cmd) {
+    if (cmd.empty()) return "ERR empty command";
+
+    for (char &c : cmd[0]) c = tolower(c);    // only the command, not keys/values
+
+    if (cmd[0] == "set") {
+        if (cmd.size() != 3) return "ERR usage: set <key> <value>";
+        store[cmd[1]] = cmd[2];
+        return "OK";
+    }
+    else if (cmd[0] == "get") {
+        if (cmd.size() != 2) return "ERR usage: get <key>";
+        auto it = store.find(cmd[1]);
+        if (it == store.end()) return "NOT_FOUND";
+        return "OK " + it->second;
+    }
+    else if (cmd[0] == "del") {
+        if (cmd.size() != 2) return "ERR usage: del <key>";
+        size_t removed = store.erase(cmd[1]);
+        return removed ? "OK deleted" : "NOT_FOUND";
+    }
+    return "ERR unknown command";
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 int main(){
@@ -122,11 +193,28 @@ int val = 1;
                 continue;
             }
 
-            printf("Slot %d received: %.*s\n", i, len, buf);
 
-            // --- Command handling goes here in Chapter 7 ---
-            writefull(conn_fd, (char *)&len, 4);
-            writefull(conn_fd, buf, len);
+
+
+
+string request(buf, len);
+printf("Slot %d received: %s\n", i, request.c_str());
+
+vector<string> cmd = parse(request);
+string response = handle_command(cmd);
+
+uint32_t rlen = response.size();
+writefull(conn_fd, (char *)&rlen, 4);
+writefull(conn_fd, (char *)response.c_str(), rlen);
+
+
+
+
+            // printf("Slot %d received: %.*s\n", i, len, buf);
+
+            // // --- Command handling goes here in Chapter 7 ---
+            // writefull(conn_fd, (char *)&len, 4);
+            // writefull(conn_fd, buf, len);
         }
     }
 
